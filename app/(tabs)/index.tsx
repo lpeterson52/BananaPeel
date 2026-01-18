@@ -211,7 +211,7 @@ export default function Scan() {
 
         <SafeAreaView key={1} style={styles.topButtonContainer}>
           <TouchableOpacity style={styles.iconButton} onPress={toggleFlash}>
-            <MaterialIcons name={flashEnabled ? 'flash-on' : 'flash-off'} size={28} color="white" />
+            <MaterialIcons name={flashEnabled ? 'flash-on' : 'flash-off'} size={28} color='white' />
           </TouchableOpacity>
         </SafeAreaView>,
 
