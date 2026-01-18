@@ -1,8 +1,7 @@
 // Example imageurl
 
 import axios from 'axios';
-import * as FileSystem from 'expo-file-system';
-import { File, Directory, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 
 
 /**
