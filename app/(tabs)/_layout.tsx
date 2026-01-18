@@ -17,13 +17,6 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
-      <Tabs.Screen // History Tab
-        name="history"
-        options={{
-          title: 'History',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-        }}
-      />
       <Tabs.Screen // Search Tab
         name="search"
         options={{
@@ -39,17 +32,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen // Explore Tab
-        name="explore"
+        name="leaderboard"
         options={{
           title: 'Leaderboard',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
-      <Tabs.Screen // Settings Tab
-        name="settings"
+      <Tabs.Screen
+        name="result"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+          title: 'Result',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
         }}
       />
     </Tabs>
