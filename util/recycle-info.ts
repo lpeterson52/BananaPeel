@@ -28,7 +28,11 @@ export function isCompostable(prediction: string): boolean {
     return compostableItems.some(item => prediction.includes(item));
   }
 
-export function classifyRecyclability(prediction: string): 'recyclable' | 'compostable' | 'landfill' {
+export function classifyRecyclability(prediction: string): 'recyclable' | 'compostable' | 'landfill' | 'Unknown' {
+    if (!prediction) {
+        return 'Unknown';
+    }
+    
     if (isRecyclable(prediction)) {
         return 'recyclable';
     } else if (isCompostable(prediction)) {

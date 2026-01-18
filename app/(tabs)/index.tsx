@@ -15,6 +15,8 @@ import { saveHistoryItem, createThumbnail , getClassificationColor} from '../../
 
 import { getRecycleInfo, isRecyclable , classifyRecyclability } from "@/util/recycle-info";
 
+import { updateUserScore } from "@/util/leaderboardData";
+
 function ResultSheetContent({
   imageUri,
   onLoaded,
@@ -41,7 +43,6 @@ function ResultSheetContent({
           try {
             const thumbnailUri = await createThumbnail(imageUri);
             const topPred = res.predictions[0];
-            console.log("history prediction: ", topPred);
             await saveHistoryItem({
               thumbnailUri,
               originalUri: imageUri,
@@ -89,8 +90,8 @@ function ResultSheetContent({
 
   const handleFeedback = (isCorrect: boolean) => {
     // Handle feedback submission here
-    console.log("User feedback:", isCorrect ? "Correct" : "Incorrect");
     setFeedbackGiven(true);
+    updateUserScore(5);
   };
 
   return (
@@ -141,7 +142,7 @@ function ResultSheetContent({
             )}
 
             {result.predictions.length > 0 && (
-              feedbackGiven ? <ThemedText style={{ marginTop: 40, textAlign: "center", color: "gray" }}>Thank you! Your feedback may help our predictions get better in the future</ThemedText> :
+              feedbackGiven ? <ThemedText style={{ marginTop: 40, textAlign: "center", color: "gray" }}>Thank you! Your feedback may help our predictions get better in the future.{"\n"}Here&apos;s 5 bonus points!</ThemedText> :
               <View style={styles.questionWrapper}>
                 <ThemedText type="subtitle" style={styles.questions}>Is this prediction correct?</ThemedText>
                 <View style={styles.feedbackButtonWrapper}>
@@ -190,6 +191,8 @@ export default function Scan() {
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
+    
+    updateUserScore(10);
     
     try {
       const photo = await cameraRef.current.takePictureAsync({
@@ -243,7 +246,7 @@ export default function Scan() {
           />
         </InformationView>
       ] : [
-        <CameraView key={0} ref={cameraRef} style={styles.camera} facing={'back'} flash={flashEnabled ? 'on' : 'off'} zoom={0.15}/>,
+        <CameraView key={0} ref={cameraRef} style={styles.camera} facing={'back'} flash={flashEnabled ? 'on' : 'off'} zoom={0.05}/>,
 
         <SafeAreaView key={1} style={styles.topButtonContainer}>
           <GlassView style={styles.glassCircle} glassEffectStyle="clear" isInteractive>

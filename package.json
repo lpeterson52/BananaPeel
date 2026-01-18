@@ -20,6 +20,7 @@
     "@rneui/themed": "4.0.0-rc.8",
     "axios": "^1.13.2",
     "expo": ">=54.0.0-0 <55.0.0",
+    "expo-application": "~7.0.8",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
     "expo-file-system": "~19.0.21",
