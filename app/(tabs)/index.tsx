@@ -70,22 +70,20 @@ function ResultSheetContent({
   }, [imageUri, onLoaded]);
 
   const topPrediction = result?.predictions?.[0] ?? null;
-  
-
 
   const formatConfidenceValue = (v: any) => {
     const n = Number((v ?? 0)) * 100;
     return `${Number.isNaN(n) ? "0.0" : n.toFixed(1)}%`;
   };
 
-  const capitalize = (s?: string) => {
-    if (!s) return "";
-    return String(s)
-      .toLowerCase()
-      .split(/\s+/)
-      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
-      .join(" ");
-  };
+  // const capitalize = (s?: string) => {
+  //   if (!s) return "";
+  //   return String(s)
+  //     .toLowerCase()
+  //     .split(/\s+/)
+  //     .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+  //     .join(" ");
+  // };
 
   const [feedbackGiven, setFeedbackGiven] = useState(false);
 
@@ -114,7 +112,7 @@ function ResultSheetContent({
             <ThemedText
               type="subtitle"
               style={{
-                color: getClassificationColor(classifyRecyclability(topPrediction.class)),
+                color: topPrediction ? getClassificationColor(classifyRecyclability(topPrediction.class)) : 'gray',
                 marginBottom: 10,
                 fontSize: 30,
                 textTransform: "capitalize"
@@ -139,7 +137,7 @@ function ResultSheetContent({
                 </View>
               </>
             ) : (
-              <ThemedText>No detections.</ThemedText>
+              <ThemedText>Please try again</ThemedText>
             )}
 
             {result.predictions.length > 0 && (
