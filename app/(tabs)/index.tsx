@@ -1,5 +1,6 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
+import { GlassView } from "expo-glass-effect";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Button, TouchableOpacity, View, ActivityIndicator, ScrollView } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -10,9 +11,9 @@ import { ThemedView } from "@/components/themed-view";
 import { InformationView, InformationSheetRef } from "@/components/information-modal";
 
 import classifyImage from "../../util/roboflow";
-import { saveHistoryItem, createThumbnail } from '../../util/historyStorage';
+import { saveHistoryItem, createThumbnail , getClassificationColor} from '../../util/historyStorage';
 
-import { getRecycleInfo, isRecyclable } from "@/util/recycle-info";
+import { getRecycleInfo, isRecyclable , classifyRecyclability } from "@/util/recycle-info";
 
 function ResultSheetContent({
   imageUri,
@@ -25,7 +26,6 @@ function ResultSheetContent({
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // same logic as result.tsx :contentReference[oaicite:2]{index=2}
   useEffect(() => {
     let cancelled = false;
 
@@ -42,11 +42,10 @@ function ResultSheetContent({
             const thumbnailUri = await createThumbnail(imageUri);
             const topPred = res.predictions[0];
             console.log("history prediction: ", topPred);
-            // For now, set classification as 'unknown' since logic is being worked on
             await saveHistoryItem({
               thumbnailUri,
               originalUri: imageUri,
-              classification: isRecyclable(topPred.class) ? "recyclable" : "landfill",
+              classification: classifyRecyclability(topPred.class),
               confidence: topPred.confidence ?? topPred.confidence_score,
               className: topPred.class,
             });
@@ -75,7 +74,7 @@ function ResultSheetContent({
 
 
   const formatConfidenceValue = (v: any) => {
-    const n = Number((v ?? 0)) * 100; // :contentReference[oaicite:4]{index=4}
+    const n = Number((v ?? 0)) * 100;
     return `${Number.isNaN(n) ? "0.0" : n.toFixed(1)}%`;
   };
 
@@ -86,6 +85,14 @@ function ResultSheetContent({
       .split(/\s+/)
       .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
       .join(" ");
+  };
+
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+
+  const handleFeedback = (isCorrect: boolean) => {
+    // Handle feedback submission here
+    console.log("User feedback:", isCorrect ? "Correct" : "Incorrect");
+    setFeedbackGiven(true);
   };
 
   return (
@@ -107,22 +114,20 @@ function ResultSheetContent({
             <ThemedText
               type="subtitle"
               style={{
-                color: topPrediction
-                  ? isRecyclable(topPrediction.class)
-                    ? "#0abfff"
-                    : "#ff4d4f"
-                  : "#808080",
-                marginBottom: 6,
+                color: getClassificationColor(classifyRecyclability(topPrediction.class)),
+                marginBottom: 10,
+                fontSize: 30,
+                textTransform: "capitalize"
               }}
             >
-              {topPrediction ? (isRecyclable(topPrediction.class) ? "Recyclable\n" : "Not Recyclable\n") : ""}
+              {topPrediction ? classifyRecyclability(topPrediction.class) : "No detections"}
             </ThemedText>
 
             {topPrediction ? (
               <>
                 <ThemedText type="subtitle">Prediction</ThemedText>
                 <View style={styles.predictionRow}>
-                  <ThemedText style={styles.predClass}>{capitalize(topPrediction.class)}</ThemedText>
+                  <ThemedText style={styles.predClass}>{topPrediction.class}</ThemedText>
                   <ThemedText>
                     {formatConfidenceValue(topPrediction.confidence ?? topPrediction.confidence_score)}
                   </ThemedText>
@@ -137,15 +142,14 @@ function ResultSheetContent({
               <ThemedText>No detections.</ThemedText>
             )}
 
-            {Array.isArray(result?.predictions) && result.predictions.length > 0 && (
-              <View style={{ marginTop: 12 }}>
-                <ThemedText type="subtitle">All Detections</ThemedText>
-                {result.predictions.map((p: any, i: number) => (
-                  <View key={i} style={styles.predictionRow}>
-                    <ThemedText>{p.class}</ThemedText>
-                    <ThemedText>{formatConfidenceValue(p.confidence ?? p.confidence_score)}</ThemedText>
-                  </View>
-                ))}
+            {result.predictions.length > 0 && (
+              feedbackGiven ? <ThemedText style={{ marginTop: 40, textAlign: "center", color: "gray" }}>Thank you! Your feedback may help our predictions get better in the future</ThemedText> :
+              <View style={styles.questionWrapper}>
+                <ThemedText type="subtitle" style={styles.questions}>Is this prediction correct?</ThemedText>
+                <View style={styles.feedbackButtonWrapper}>
+                  <TouchableOpacity style={[styles.feedbackButton, {backgroundColor: 'rgba(0, 255, 0, 0.4)'}]} onPress={() => handleFeedback(true)}><ThemedText>Yes</ThemedText></TouchableOpacity>
+                  <TouchableOpacity style={[styles.feedbackButton, {backgroundColor: 'rgba(255, 0, 0, 0.4)'}]} onPress={() => handleFeedback(false)}><ThemedText>No</ThemedText></TouchableOpacity>
+                </View>
               </View>
             )}
           </ScrollView>
@@ -188,6 +192,7 @@ export default function Scan() {
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
+    
     try {
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
@@ -240,16 +245,21 @@ export default function Scan() {
           />
         </InformationView>
       ] : [
-        <CameraView key={0} ref={cameraRef} style={styles.camera} facing={'back'} enableTorch={flashEnabled} />,
+        <CameraView key={0} ref={cameraRef} style={styles.camera} facing={'back'} flash={flashEnabled ? 'on' : 'off'} zoom={0.15}/>,
 
         <SafeAreaView key={1} style={styles.topButtonContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={toggleFlash}>
-            <MaterialIcons name={flashEnabled ? 'flash-on' : 'flash-off'} size={28} color='white' />
-          </TouchableOpacity>
+          <GlassView style={styles.glassCircle} glassEffectStyle="clear" isInteractive>
+            <TouchableOpacity style={styles.iconButton} onPress={toggleFlash}>
+              <MaterialIcons name={flashEnabled ? 'flash-on' : 'flash-off'} size={28} color='white' />
+            </TouchableOpacity>
+          </GlassView>
         </SafeAreaView>,
 
         <View key={2} style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.shutterButton} onPress={takePicture}></TouchableOpacity>
+          <View style={styles.shutterWrapper}>
+            <TouchableOpacity style={styles.shutterButton} onPress={takePicture}></TouchableOpacity>
+          </View>
+          
         </View>
       ]}
     </ThemedView>
@@ -300,12 +310,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  glassCircle: {
+    position: 'relative',
+    width: 50,
+    height: 50,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0, 0.2)",
+  },
+  shutterWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 50,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    // padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    bottom: 40,
+  },
   shutterButton: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     bottom: 0,
     borderRadius: 50,
-    backgroundColor: '#fff'
+    backgroundColor: 'white'
   },
   modalContent: {
     height: '25%',
@@ -357,6 +386,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  predClass: { fontWeight: "600" },
+  predClass: { fontWeight: "600", textTransform: "capitalize"},
   error: { color: "red" },
+  questions: {
+    // fontWeight: "500",
+    textAlign: "center",
+    color: "gray",
+  },
+  questionWrapper: {
+    // alignItems: "center",
+    marginTop: 40,
+  },
+  feedbackButtonWrapper: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 100,
+    marginTop: 10,
+  },
+  feedbackButton: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
 });

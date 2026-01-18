@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { Platform, StyleSheet, FlatList, TouchableOpacity, RefreshControl, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GlassView } from "expo-glass-effect";
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -85,10 +86,11 @@ export default function HistoryScreen() {
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
-      <ThemedView style={[styles.item, { backgroundColor }]}>
+      <ThemedView style={[styles.item, { backgroundColor, height: thumbnailSize + 24 + 8, position: 'relative' }]}>
+        <GlassView style={[styles.glassOverlay, { borderRadius: 14 }]} />
         <Image
           source={{ uri: item.thumbnailUri }}
-          style={[styles.thumbnail, { width: thumbnailSize, height: thumbnailSize+15 }]}
+          style={[styles.thumbnail, { width: thumbnailSize, height: thumbnailSize + 8}]}
           contentFit="cover"
         />
         <View style={styles.itemContent}>
@@ -96,20 +98,23 @@ export default function HistoryScreen() {
             <ThemedText style={styles.itemTitle}>
               {item.className || 'Unknown Item'}
             </ThemedText>
-            <ThemedText style={styles.itemSubtitle}>
-              {item.classification}
-              {item.confidence && ` • ${(item.confidence * 100).toFixed(1)}%`}
-            </ThemedText>
+            <GlassView isInteractive style={styles.itemSubtitleContainer}>
+              <ThemedText style={styles.itemSubtitle}>
+                {item.classification}
+                {item.confidence && ` • ${(item.confidence * 100).toFixed(1)}%`}
+              </ThemedText>
+            </GlassView>
             <ThemedText style={styles.itemTimestamp}>
               {dateStr} at {timeStr}
             </ThemedText>
           </View>
-          <TouchableOpacity 
-            onPress={() => handleDelete(item.id)}
-            style={styles.deleteButton}
-          >
-            <IconSymbol name="trash" size={20} color="#fff" />
-          </TouchableOpacity>
+          <GlassView style={styles.deleteButton} isInteractive={true} glassEffectStyle="clear">
+            <TouchableOpacity 
+              onPress={() => handleDelete(item.id)}
+                           >
+              <IconSymbol name="trash" size={20} color="#fff" />
+            </TouchableOpacity>
+          </GlassView>
         </View>
       </ThemedView>
     );
@@ -124,16 +129,18 @@ export default function HistoryScreen() {
           </ThemedView>
           
           <ThemedView style={styles.stepContainer}>
+            <GlassView isInteractive style={styles.searchContainer}>
             <SearchBar
               placeholder="Search by item or classification..."
               onChangeText={updateSearch}
               value={search}
               platform={Platform.OS === 'ios' ? 'ios' : 'android'}
-              containerStyle={styles.searchContainer}
-              inputContainerStyle={styles.searchInputContainer}
+              containerStyle={styles.searchContainer2}
+              inputContainerStyle={styles.searchContainer2}
               searchIcon={{ name: 'search', type: 'material' }}
               clearIcon={{ name: 'close', type: 'material' }}
             />
+            </GlassView>
           </ThemedView>
 
           {loading ? (
@@ -173,23 +180,25 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 20,
   },
   stepContainer: {
-    paddingHorizontal: 0,
-    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   searchContainer: {
     backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    paddingHorizontal: 12,
-    marginBottom: 8,
+    borderRadius: 100,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchContainer2: {
+    backgroundColor: 'transparent',
   },
   searchInputContainer: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 12,
-    height: 44,
+    borderRadius: 10,
+    height: 40,
   },
   listContent: {
     paddingBottom: 20,
@@ -197,10 +206,11 @@ const styles = StyleSheet.create({
   },
   item: {
     flexDirection: 'row',
-    padding: 12,
-    marginVertical: 8,
+    padding: 10,
+    marginVertical: 6,
     marginHorizontal: 12,
-    borderRadius: 14,
+    borderRadius: 12,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -210,53 +220,65 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.06)',
     overflow: 'hidden',
   },
+  glassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  glassFallback: {
+    backgroundColor: 'rgba(255,255,255,0.04)'
+  },
   thumbnail: {
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: '#f6f6f6',
     overflow: 'hidden',
-    alignContent: 'center'
+    alignContent: 'center',
+    marginRight: 10,
   },
   itemContent: {
     flex: 1,
     flexDirection: 'row',
-    marginLeft: 12,
+    // reduced left spacing since thumbnail now has marginRight
+    marginLeft: 0,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   itemTextContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingRight: 8,
+    paddingRight: 6,
   },
   itemTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#fff',
-    marginBottom: 6,
+    marginBottom: 2,
+    textTransform: 'capitalize'
   },
   itemSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#fff',
     opacity: 0.95,
     textTransform: 'capitalize',
-    marginBottom: 6,
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    // width: '100%'
+  },
+  itemSubtitleContainer: {
+    marginBottom: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 999,
     alignSelf: 'flex-start',
   },
   itemTimestamp: {
     fontSize: 12,
     color: '#fff',
-    opacity: 0.8,
+    opacity: 0.85,
   },
   deleteButton: {
-    padding: 8,
+    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.12)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.14)',
+    borderRadius: 999,
   },
   emptyContainer: {
     flex: 1,

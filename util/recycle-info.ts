@@ -19,6 +19,21 @@ export function getRecycleInfo(prediction: string): string {
 }
 
 export function isRecyclable(prediction: string): boolean {
-  const recyclableItems = ['paper', 'glass', 'metal', 'cardboard'];
+  const recyclableItems = ['paper', 'glass', 'metal', 'cardboard', 'plastic'];
   return recyclableItems.some(item => prediction.includes(item));
+}
+
+export function isCompostable(prediction: string): boolean {
+    const compostableItems = ['biological'];
+    return compostableItems.some(item => prediction.includes(item));
+  }
+
+export function classifyRecyclability(prediction: string): 'recyclable' | 'compostable' | 'landfill' {
+    if (isRecyclable(prediction)) {
+        return 'recyclable';
+    } else if (isCompostable(prediction)) {
+        return 'compostable';
+    } else {
+        return 'landfill';
+    }
 }
