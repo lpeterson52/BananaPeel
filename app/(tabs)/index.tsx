@@ -10,6 +10,7 @@ import { ThemedView } from "@/components/themed-view";
 import { InformationView, InformationSheetRef } from "@/components/information-modal";
 
 import classifyImage from "../../util/roboflow";
+import { saveHistoryItem, createThumbnail, ClassificationType } from '../../util/historyStorage';
 
 function ResultSheetContent({
   imageUri,
@@ -32,6 +33,26 @@ function ResultSheetContent({
         setError(null);
         const res = await classifyImage(imageUri);
         if (!cancelled) setResult(res);
+        
+        // Save to history after successful classification
+        if (res?.predictions?.[0]) {
+          try {
+            const thumbnailUri = await createThumbnail(imageUri);
+            const topPred = res.predictions[0];
+
+            // For now, set classification as 'unknown' since logic is being worked on
+            await saveHistoryItem({
+              thumbnailUri,
+              originalUri: imageUri,
+              classification: "unknown" as ClassificationType,
+              confidence: topPred.confidence ?? topPred.confidence_score,
+              className: topPred.class,
+            });
+          } catch (saveError) {
+            console.error("Failed to save to history:", saveError);
+            // Don't block the UI if saving fails
+          }
+        }
       } catch (err: any) {
         if (!cancelled) setError(err?.message ?? String(err));
       } finally {
