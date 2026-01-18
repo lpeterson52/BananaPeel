@@ -91,7 +91,11 @@ export const InformationView = forwardRef<InformationSheetRef, Props>(
     const panResponder = useMemo(
       () =>
         PanResponder.create({
-          onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+          onStartShouldSetPanResponder: () => true,
+          onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 2,
+
+          onPanResponderTerminationRequest: () => false,
+
           onPanResponderMove: (_, g) => {
             const base = toTranslateY(currentSnap.current);
             const next = Math.min(Math.max(0, base + g.dy), toTranslateY("mini"));
@@ -117,7 +121,6 @@ export const InformationView = forwardRef<InformationSheetRef, Props>(
             else snapTo("mini");
           },
         }),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       []
     );
 
@@ -130,10 +133,13 @@ export const InformationView = forwardRef<InformationSheetRef, Props>(
         />
         <Animated.View style={[styles.sheet, { height: FULL_H, transform: [{ translateY }] }]}>
           <View style={styles.header} {...panResponder.panHandlers}>
+          <View style={styles.grabArea} {...panResponder.panHandlers}>
             <View style={styles.handle} />
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialIcons name="cancel" color="rgba(255,255,255,0.45)" size={28} />
-            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <MaterialIcons name="cancel" color="white" size={24} />
+          </TouchableOpacity>
           </View>
           <View style={styles.content}>{children}</View>
         </Animated.View>
@@ -161,12 +167,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#464C55",
     alignItems: "center",
     justifyContent: "center",
+    width: "100%",
   },
   handle: {
     width: 44,
     height: 5,
     borderRadius: 99,
     backgroundColor: "rgba(255,255,255,0.45)",
+  },
+  grabArea: {
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
   },
   closeBtn: {
     position: "absolute",
