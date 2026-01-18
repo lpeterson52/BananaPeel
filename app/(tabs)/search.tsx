@@ -15,10 +15,6 @@ import { Fonts } from '@/constants/theme';
 import { SearchBar } from '@rneui/themed';
 // import { ScrollView } from 'react-native-reanimated/lib/typescript/Animated';
 
-
-
-
-
 export default function SearchScreen() {
   const DATA = useMemo(
     () => Array.from({ length: 40 }, (_, i) => ({ id: String(i), title: `Item ${i}` })),

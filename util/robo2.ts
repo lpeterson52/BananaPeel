@@ -39,3 +39,4 @@ export default async function detectTrash(imageUri: string) {
 
     return response.data;
 }
+// note: ./roboflow.ts is the file currently in use. this refactor is for later once the project has more leverage, for a cleaner look. obviously, what works is what goes, for now.

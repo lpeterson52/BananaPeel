@@ -132,7 +132,7 @@ export const InformationView = forwardRef<InformationSheetRef, Props>(
           <View style={styles.header} {...panResponder.panHandlers}>
             <View style={styles.handle} />
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialIcons name="close" color="white" size={22} />
+              <MaterialIcons name="cancel" color="rgba(255,255,255,0.45)" size={28} />
             </TouchableOpacity>
           </View>
           <View style={styles.content}>{children}</View>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   header: {
-    height: 48,
+    height: 40,
     backgroundColor: "#464C55",
     alignItems: "center",
     justifyContent: "center",
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: "absolute",
-    right: 12,
+    right: 4,
     padding: 8,
   },
   content: {
