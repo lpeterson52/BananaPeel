@@ -257,9 +257,9 @@ export default function Scan() {
         </SafeAreaView>,
 
         <View key={2} style={styles.bottomButtonContainer}>
-          <View style={styles.shutterWrapper}>
+          <GlassView style={styles.shutterWrapper} isInteractive glassEffectStyle="clear">
             <TouchableOpacity style={styles.shutterButton} onPress={takePicture}></TouchableOpacity>
-          </View>
+          </GlassView>
           
         </View>
       ]}
@@ -321,10 +321,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0, 0.2)",
   },
   shutterWrapper: {
-    width: 80,
-    height: 80,
+    width: 75,
+    height: 75,
     borderRadius: 50,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     // padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     height: 60,
     bottom: 0,
     borderRadius: 50,
-    backgroundColor: 'white'
+    backgroundColor: 'rgba(255, 255, 255, 0.9)'
   },
   modalContent: {
     height: '25%',
