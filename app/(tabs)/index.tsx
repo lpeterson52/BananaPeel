@@ -10,7 +10,9 @@ import { ThemedView } from "@/components/themed-view";
 import { InformationView, InformationSheetRef } from "@/components/information-modal";
 
 import classifyImage from "../../util/roboflow";
-import { saveHistoryItem, createThumbnail, ClassificationType } from '../../util/historyStorage';
+import { saveHistoryItem, createThumbnail } from '../../util/historyStorage';
+
+import { getRecycleInfo, isRecyclable } from "@/util/recycle-info";
 
 function ResultSheetContent({
   imageUri,
@@ -39,12 +41,12 @@ function ResultSheetContent({
           try {
             const thumbnailUri = await createThumbnail(imageUri);
             const topPred = res.predictions[0];
-
+            console.log("history prediction: ", topPred);
             // For now, set classification as 'unknown' since logic is being worked on
             await saveHistoryItem({
               thumbnailUri,
               originalUri: imageUri,
-              classification: "unknown" as ClassificationType,
+              classification: isRecyclable(topPred.class) ? "recyclable" : "landfill",
               confidence: topPred.confidence ?? topPred.confidence_score,
               className: topPred.class,
             });
@@ -58,7 +60,7 @@ function ResultSheetContent({
       } finally {
         if (!cancelled) {
           setLoading(false);
-          onLoaded(); // ✅ tell sheet to expand to half
+          onLoaded(); // tell sheet to expand to half
         }
       }
     })();
@@ -68,16 +70,26 @@ function ResultSheetContent({
     };
   }, [imageUri, onLoaded]);
 
-  const topPrediction = result?.predictions?.[0] ?? null; // :contentReference[oaicite:3]{index=3}
+  const topPrediction = result?.predictions?.[0] ?? null;
+  
+
 
   const formatConfidenceValue = (v: any) => {
     const n = Number((v ?? 0)) * 100; // :contentReference[oaicite:4]{index=4}
     return `${Number.isNaN(n) ? "0.0" : n.toFixed(1)}%`;
   };
 
+  const capitalize = (s?: string) => {
+    if (!s) return "";
+    return String(s)
+      .toLowerCase()
+      .split(/\s+/)
+      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+      .join(" ");
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      {/* Title row like Google Translate's "panel" feel */}
       <View style={styles.sheetTitleRow}>
         <ThemedText style={styles.sheetTitle}>Result</ThemedText>
       </View>
@@ -92,14 +104,35 @@ function ResultSheetContent({
           <ThemedText style={styles.error}>{error}</ThemedText>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
-            <ThemedText type="subtitle">Top Prediction</ThemedText>
+            <ThemedText
+              type="subtitle"
+              style={{
+                color: topPrediction
+                  ? isRecyclable(topPrediction.class)
+                    ? "#0abfff"
+                    : "#ff4d4f"
+                  : "#808080",
+                marginBottom: 6,
+              }}
+            >
+              {topPrediction ? (isRecyclable(topPrediction.class) ? "Recyclable\n" : "Not Recyclable\n") : ""}
+            </ThemedText>
+
             {topPrediction ? (
-              <View style={styles.predictionRow}>
-                <ThemedText style={styles.predClass}>{topPrediction.class}</ThemedText>
-                <ThemedText>
-                  {formatConfidenceValue(topPrediction.confidence ?? topPrediction.confidence_score)}
-                </ThemedText>
-              </View>
+              <>
+                <ThemedText type="subtitle">Prediction</ThemedText>
+                <View style={styles.predictionRow}>
+                  <ThemedText style={styles.predClass}>{capitalize(topPrediction.class)}</ThemedText>
+                  <ThemedText>
+                    {formatConfidenceValue(topPrediction.confidence ?? topPrediction.confidence_score)}
+                  </ThemedText>
+                </View>
+
+                <View style={{ marginTop: 8 }}>
+                  <ThemedText type="subtitle">Advice</ThemedText>
+                  <ThemedText>{getRecycleInfo(topPrediction.class)}</ThemedText>
+                </View>
+              </>
             ) : (
               <ThemedText>No detections.</ThemedText>
             )}

@@ -3,13 +3,11 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 const HISTORY_KEY = '@history_items';
 
-export type ClassificationType = 'recyclable' | 'compost' | 'landfill' | 'unknown';
-
 export interface HistoryItem {
   id: string;
   thumbnailUri: string;
   originalUri: string;
-  classification: ClassificationType;
+  classification: string;
   confidence?: number;
   timestamp: number;
   className?: string;
@@ -96,13 +94,47 @@ export async function clearHistory(): Promise<void> {
 }
 
 /**
+ * Format a timestamp relative to now.
+ * - < 60s => 'just now'
+ * - < 60m => 'X minutes ago'
+ * - < 24h => 'X hours ago'
+ * - < 7d => 'X days ago'
+ * - otherwise => locale date string
+ */
+export function formatRelativeTimestamp(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+
+  if (diff < 60_000) {
+    return 'just now';
+  }
+
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 60) {
+    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+  }
+
+  const hours = Math.floor(diff / 3_600_000);
+  if (hours < 24) {
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+  }
+
+  const days = Math.floor(diff / 86_400_000);
+  if (days < 7) {
+    return days === 1 ? '1 day ago' : `${days} days ago`;
+  }
+
+  return new Date(timestamp).toLocaleDateString();
+}
+
+/**
  * Get background color for classification type
  */
-export function getClassificationColor(classification: ClassificationType): string {
+export function getClassificationColor(classification: string): string {
   switch (classification) {
     case 'recyclable':
       return '#4CAF50'; // Green
-    case 'compost':
+    case 'compostable':
       return '#8B4513'; // Brown
     case 'landfill':
       return '#757575'; // Gray

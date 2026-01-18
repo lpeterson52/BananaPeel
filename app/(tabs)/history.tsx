@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Platform, StyleSheet, FlatList, TouchableOpacity, RefreshControl, View } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { Platform, StyleSheet, FlatList, TouchableOpacity, RefreshControl, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,7 +13,8 @@ import {
   getHistory, 
   deleteHistoryItem, 
   HistoryItem,
-  getClassificationColor 
+  getClassificationColor,
+  formatRelativeTimestamp
 } from '../../util/historyStorage';
 
 export default function HistoryScreen() {
@@ -20,6 +22,8 @@ export default function HistoryScreen() {
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { width } = useWindowDimensions();
+  const thumbnailSize = Math.min(96, Math.max(64, Math.floor(width * 0.18)));
 
   const loadHistory = async () => {
     try {
@@ -35,6 +39,14 @@ export default function HistoryScreen() {
   useEffect(() => {
     loadHistory();
   }, []);
+
+  // Reload when the tab becomes focused so newly saved items appear immediately
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    if (isFocused) {
+      loadHistory();
+    }
+  }, [isFocused]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -69,14 +81,14 @@ export default function HistoryScreen() {
   const renderItem = ({ item }: { item: HistoryItem }) => {
     const backgroundColor = getClassificationColor(item.classification);
     const date = new Date(item.timestamp);
-    const dateStr = date.toLocaleDateString();
+    const dateStr = formatRelativeTimestamp(date.getTime());
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
       <ThemedView style={[styles.item, { backgroundColor }]}>
-        <Image 
-          source={{ uri: item.thumbnailUri }} 
-          style={styles.thumbnail}
+        <Image
+          source={{ uri: item.thumbnailUri }}
+          style={[styles.thumbnail, { width: thumbnailSize, height: thumbnailSize }]}
           contentFit="cover"
         />
         <View style={styles.itemContent}>
@@ -104,49 +116,54 @@ export default function HistoryScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">History</ThemedText>
-        </ThemedView>
-        
-        <ThemedView style={styles.stepContainer}>
-          <SearchBar
-            placeholder="Search by item or classification..."
-            onChangeText={updateSearch}
-            value={search}
-            platform={Platform.OS === 'ios' ? 'ios' : 'android'}
-            containerStyle={styles.searchContainer}
-          />
-        </ThemedView>
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ThemedView style={styles.container}>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title">History</ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.stepContainer}>
+            <SearchBar
+              placeholder="Search by item or classification..."
+              onChangeText={updateSearch}
+              value={search}
+              platform={Platform.OS === 'ios' ? 'ios' : 'android'}
+              containerStyle={styles.searchContainer}
+              inputContainerStyle={styles.searchInputContainer}
+              searchIcon={{ name: 'search', type: 'material' }}
+              clearIcon={{ name: 'close', type: 'material' }}
+            />
+          </ThemedView>
 
-        {loading ? (
-          <ThemedView style={styles.emptyContainer}>
-            <ThemedText>Loading history...</ThemedText>
-          </ThemedView>
-        ) : filteredHistory.length === 0 ? (
-          <ThemedView style={styles.emptyContainer}>
-            <IconSymbol name="clock" size={48} color="#999" />
-            <ThemedText style={styles.emptyText}>
-              {search ? 'No matching items found' : 'No items scanned yet'}
-            </ThemedText>
-            <ThemedText style={styles.emptySubtext}>
-              {search ? 'Try a different search term' : 'Start scanning items to build your history'}
-            </ThemedText>
-          </ThemedView>
-        ) : (
-          <FlatList
-            data={filteredHistory}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.listContent}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-          />
-        )}
-      </ThemedView>
-    </SafeAreaView>
+          {loading ? (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText>Loading history...</ThemedText>
+            </ThemedView>
+          ) : filteredHistory.length === 0 ? (
+            <ThemedView style={styles.emptyContainer}>
+              <IconSymbol name="clock" size={48} color="#999" />
+              <ThemedText style={styles.emptyText}>
+                {search ? 'No matching items found' : 'No items scanned yet'}
+              </ThemedText>
+              <ThemedText style={styles.emptySubtext}>
+                {search ? 'Try a different search term' : 'Start scanning items to build your history'}
+              </ThemedText>
+            </ThemedView>
+          ) : (
+            <FlatList
+              data={filteredHistory}
+              renderItem={renderItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            />
+          )}
+        </ThemedView>
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
@@ -166,28 +183,39 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderTopWidth: 0,
     borderBottomWidth: 0,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  searchInputContainer: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 12,
+    height: 44,
   },
   listContent: {
-    paddingBottom: 16,
+    paddingBottom: 20,
+    paddingTop: 8,
   },
   item: {
     flexDirection: 'row',
     padding: 12,
-    marginVertical: 6,
+    marginVertical: 8,
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    overflow: 'hidden',
   },
   thumbnail: {
     width: 80,
     height: 80,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    backgroundColor: '#f6f6f6',
+    overflow: 'hidden',
   },
   itemContent: {
     flex: 1,
@@ -199,29 +227,37 @@ const styles = StyleSheet.create({
   itemTextContainer: {
     flex: 1,
     justifyContent: 'center',
+    paddingRight: 8,
   },
   itemTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   itemSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#fff',
-    opacity: 0.9,
+    opacity: 0.95,
     textTransform: 'capitalize',
-    marginBottom: 2,
+    marginBottom: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
   },
   itemTimestamp: {
     fontSize: 12,
     color: '#fff',
-    opacity: 0.7,
+    opacity: 0.8,
   },
   deleteButton: {
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 20,
   },
   emptyContainer: {
     flex: 1,
