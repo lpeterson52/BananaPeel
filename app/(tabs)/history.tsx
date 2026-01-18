@@ -23,7 +23,7 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
-  const thumbnailSize = Math.min(96, Math.max(64, Math.floor(width * 0.18)));
+  const thumbnailSize = Math.min(96, Math.max(80, Math.floor(width * 0.18)));
 
   const loadHistory = async () => {
     try {
@@ -88,7 +88,7 @@ export default function HistoryScreen() {
       <ThemedView style={[styles.item, { backgroundColor }]}>
         <Image
           source={{ uri: item.thumbnailUri }}
-          style={[styles.thumbnail, { width: thumbnailSize, height: thumbnailSize }]}
+          style={[styles.thumbnail, { width: thumbnailSize, height: thumbnailSize+15 }]}
           contentFit="cover"
         />
         <View style={styles.itemContent}>
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     marginVertical: 8,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -211,11 +211,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   thumbnail: {
-    width: 80,
-    height: 80,
     borderRadius: 10,
     backgroundColor: '#f6f6f6',
     overflow: 'hidden',
+    alignContent: 'center'
   },
   itemContent: {
     flex: 1,
@@ -241,7 +240,7 @@ const styles = StyleSheet.create({
     opacity: 0.95,
     textTransform: 'capitalize',
     marginBottom: 6,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.20)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
